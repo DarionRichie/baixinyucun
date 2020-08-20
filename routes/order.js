@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var formidable = require('formidable');//获取上传的图片
 var api = require('../utils/api.js');
+var message = require('../utils/message.js');
 
 //主要用于查询订单 -- 
 //使用API获取云数据库的所有的房间的信息：包括：房间的图片，房间的订房数量，房间的类型等   ///这里只需要进行post，通过图片路径的进行传递
@@ -18,9 +19,12 @@ router.post('/new',function(req,res){//新建一个对应的房间
 		if(err){
 			return ;
 		}
-		console.log(files.img.path);
+		console.log();
+		const options = {phonenumber:'18973281132',code:{"code":"111111"}};
+		//message.requestPhone(options);
 		//api.requesturlyun();
-		res.json({fields,files});//进行解析十分的方便：fields是表单域，而对应的file是文件域,图片上传方便；//接入云数据库需要 本地的path直接进入云存储
+		res.json({"yes":"yes"});
+		//res.json({fields,files});//进行解析十分的方便：fields是表单域，而对应的file是文件域,图片上传方便；//接入云数据库需要 本地的path直接进入云存储
 	});
 })
 router.post('/delete',function(req,res,next){

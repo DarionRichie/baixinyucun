@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const oAuth = (req,res,next)=>{
+	// console.log(req);
 	res.set("Content-Type",'application/json;charset=utf-8');
 	let token = req.header('X-Access-Token');
 	console.log(token);

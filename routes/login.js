@@ -16,7 +16,7 @@ router.get('/info', function(req, res, next) {
   
 });
 
-router.post('/signup',  function(req,res){//新建一个对应的房间
+router.post('/set',  function(req,res){//新建一个对应的房间
 	console.log('yes');//进行云数据库的构建，其中使用云存储进行图片的存入，并且通过云数据库进行云存储的回调（获取云存储的图片样子） //图片的上传如何进行保证
 	const form = formidable({multiples:true});
 	form.uploadDir = '././tmp';
@@ -24,17 +24,78 @@ router.post('/signup',  function(req,res){//新建一个对应的房间
 		if(err){
 			return ;
 		}
-		testdb.api_db_query1(JSON.stringify({"username":"liu"}),"admin").then(async (a)=>{
+		testdb.api_db_query1(JSON.stringify({"username":fields.username}),"admin").then(async (a)=>{
+				console.log(a);
+				console.log(fields);
+				if(a.length==0) {
+					//let pass = a[0].password;
+					if (1) {
+						bcrypt.hashPassword(fields.password).then((ress)=>{
+							testdb.api_db(JSON.stringify({"username": fields.username, "password":ress}), "admin");
+						})
+
+					}else
+						res.send("修改成功");
+					res.send("插入成功");
+				}
+				else{
+					res.send("用户存在");//插入数据  注册的数据进行插入;
+					//使用对应的hash进行加密，并且在登陆中间给一个对应的token接口
+				}
+			}
+		);
+		//链接数据库，判断是否正确;
+
+		//res.json({fields,files});//进行解析十分的方便：fields是表单域，而对应的file是文件域,图片上传方便；//接入云数据库需要 本地的path直接进入云存储
+	});
+})
+router.post('/signup',  function(req,res){//新建一个对应的房间
+	console.log('修改密码');//进行云数据库的构建，其中使用云存储进行图片的存入，并且通过云数据库进行云存储的回调（获取云存储的图片样子） //图片的上传如何进行保证
+	const form = formidable({multiples:true});
+	form.uploadDir = '././tmp';
+	form.parse(req,(err,fields,files)=>{
+		if(err){
+			return ;
+		}
+		testdb.api_db_query1(JSON.stringify({"username":fields.username}),"admin").then(async (a)=>{
 			console.log(a);
-			console.log();
-			if(a.length!=0)
-			res.send("用户名存在了");
+			console.log("查找的记录");
+			if(a.length!=0) {
+				let pass = JSON.parse(a[0]).password;
+				console.log(pass);
+				console.log("查询的password");
+				console.log(fields);
+				console.log(fields.password);
+				console.log("表单域");
+				bcrypt.comparePassword(fields.password, pass).then((ress)=>{
+					if (ress) {
+						bcrypt.hashPassword(fields.password2).then((ress)=>{
+
+								testdb.api_db_update(JSON.stringify({"username": fields.username}), JSON.stringify({"password": ress}), "admin").then((ress) => {
+									console.log(ress.errcode==0);
+									if(ress.errcode==0) {
+										bcrypt.gentoken({"username": fields.username}, '123').then((ress) => {
+											token = ress;
+											console.log(token);
+											console.log("上面是token");
+											res.set("X-Access-Token", token);
+											res.json({"username": fields.username, "token": token});
+										});
+									}else
+										res.send("发生了错误");
+								});
+
+						})
+
+					}
+					else
+						res.send("密码不正确");
+				})
+
+			}
 			else{
-			let result = await bcrypt.hashPassword('wangxin');
-			let option = {"username":"wangxin","password":result,"user":"admin"};
-			console.log(result);
-			testdb.api_db(JSON.stringify(option),"admin");
-			 res.send("用户创建成功");//插入数据  注册的数据进行插入;
+
+			 res.send("用户不存在");//插入数据  注册的数据进行插入;
 			 //使用对应的hash进行加密，并且在登陆中间给一个对应的token接口
 			 }
 		}
@@ -52,17 +113,31 @@ router.post('/login',  function(req,res){//新建一个对应的房间
 		if(err){
 			return ;
 		}
-		testdb.api_db_query1(JSON.stringify({"username":"liu"}),"admin").then(async (a)=>{
-			console.log(a);
+		console.log(fields);
+		testdb.api_db_query1(JSON.stringify({"username":fields.username}),"admin").then(async (a)=>{
+			//console.log(a);
 			console.log(111);
 			var data = a;
 			if(a.length!=0){
 				console.log(data[0]);
 				let pass = JSON.parse(a[0]).password;
-				let token = await bcrypt.gentoken({"username":"wangxin"},'123');
-				console.log(token);
-				console.log("上面是token");
-			res.json({"username":"admin","token":token});
+				console.log(pass);
+				bcrypt.comparePassword(fields.password,pass).then((ress)=>{
+					if(ress){
+						let token;
+						bcrypt.gentoken({"username":"wangxin"},'123').then((ress)=>{
+							token = ress;
+							console.log(token);
+							console.log("上面是token");
+							res.set("X-Access-Token",token);
+							res.json({"username":fields.username,"token":token});
+						});
+
+					}else {
+						res.send("密码错误");
+					}
+				})
+
 			}
 			else{
 			console.log(a);
